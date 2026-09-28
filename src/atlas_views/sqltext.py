@@ -43,7 +43,11 @@ def tokenize(sql: str) -> list[tuple[str, str]]:
             out.append((IDENT if c == "`" else STRING, sql[i:j]))
             i = start = j
             continue
-        if c == "#" or (c == "-" and sql.startswith("--", i) and (i + 2 == n or sql[i + 2] in " \t\r\n")):
+        if c == "#" or (
+            c == "-"
+            and sql.startswith("--", i)
+            and (i + 2 == n or sql[i + 2] in " \t\r\n")
+        ):
             flush(i)
             j = sql.find("\n", i)
             j = n if j == -1 else j  # the newline itself stays code
@@ -173,9 +177,26 @@ def last_name_part(qname: str) -> str:
 
 
 _DDL = [
-    ("altered", re.compile(rf"^ALTER\s+(?:ONLINE\s+|IGNORE\s+)*TABLE\s+({QNAME})", re.IGNORECASE)),
-    ("created", re.compile(rf"^CREATE\s+(?:TEMPORARY\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?({QNAME})", re.IGNORECASE)),
-    ("dropped", re.compile(rf"^DROP\s+(?:TEMPORARY\s+)?TABLES?\s+(?:IF\s+EXISTS\s+)?({QNAME}(?:\s*,\s*{QNAME})*)", re.IGNORECASE)),
+    (
+        "altered",
+        re.compile(
+            rf"^ALTER\s+(?:ONLINE\s+|IGNORE\s+)*TABLE\s+({QNAME})", re.IGNORECASE
+        ),
+    ),
+    (
+        "created",
+        re.compile(
+            rf"^CREATE\s+(?:TEMPORARY\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?({QNAME})",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "dropped",
+        re.compile(
+            rf"^DROP\s+(?:TEMPORARY\s+)?TABLES?\s+(?:IF\s+EXISTS\s+)?({QNAME}(?:\s*,\s*{QNAME})*)",
+            re.IGNORECASE,
+        ),
+    ),
 ]
 _RENAME = re.compile(r"^RENAME\s+TABLES?\s+(.+)$", re.IGNORECASE | re.DOTALL)
 _RENAME_PAIR = re.compile(rf"({QNAME})\s+TO\s+({QNAME})", re.IGNORECASE)
@@ -203,7 +224,9 @@ CREATE_VIEW_RE = re.compile(
     rf"VIEW\s+({QNAME})",
     re.IGNORECASE,
 )
-DROP_VIEW_RE = re.compile(rf"^DROP\s+VIEW\s+(?:IF\s+EXISTS\s+)?({QNAME}(?:\s*,\s*{QNAME})*)", re.IGNORECASE)
+DROP_VIEW_RE = re.compile(
+    rf"^DROP\s+VIEW\s+(?:IF\s+EXISTS\s+)?({QNAME}(?:\s*,\s*{QNAME})*)", re.IGNORECASE
+)
 _CREATE_PREFIX = re.compile(r"^CREATE\s+(?:OR\s+REPLACE\s+)?", re.IGNORECASE)
 
 

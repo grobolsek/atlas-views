@@ -22,7 +22,10 @@ from .sqltext import (
 
 BEGIN = "-- atlas-views:begin"
 END = "-- atlas-views:end"
-BLOCK_RE = re.compile(r"^-- atlas-views:begin\b.*?^-- atlas-views:end[^\n]*(?:\n|\Z)", re.MULTILINE | re.DOTALL)
+BLOCK_RE = re.compile(
+    r"^-- atlas-views:begin\b.*?^-- atlas-views:end[^\n]*(?:\n|\Z)",
+    re.MULTILINE | re.DOTALL,
+)
 DELIMITER_RE = re.compile(r"^--\s*atlas:delimiter\b", re.MULTILINE)
 _BODY_START = re.compile(r"^(?:SELECT|WITH|\()", re.IGNORECASE)
 
@@ -59,7 +62,9 @@ def parse_view_file(path: Path) -> ViewDef:
     if not stmts:
         raise ProjectError(f"{path}: file is empty")
     if len(stmts) > 1:
-        raise ProjectError(f"{path}: expected exactly one statement, found {len(stmts)}")
+        raise ProjectError(
+            f"{path}: expected exactly one statement, found {len(stmts)}"
+        )
     st = stmts[0]
     lead, rest = split_leading_comments(st.raw)
     rest = rest.rstrip()
@@ -71,7 +76,9 @@ def parse_view_file(path: Path) -> ViewDef:
         name = path.stem
         sql = f"{lead}CREATE OR REPLACE VIEW {quote_ident(name)} AS\n{rest}"
     else:
-        raise ProjectError(f"{path}: expected `CREATE VIEW name AS ...` or a bare SELECT/WITH query")
+        raise ProjectError(
+            f"{path}: expected `CREATE VIEW name AS ...` or a bare SELECT/WITH query"
+        )
     return ViewDef(name=name, sql=sql.strip(), source=str(path))
 
 
@@ -82,7 +89,9 @@ def load_views(views_dir: Path) -> dict[str, ViewDef]:
     for path in sorted(views_dir.rglob("*.sql")):
         v = parse_view_file(path)
         if v.key in views:
-            raise ProjectError(f"view `{v.name}` is defined twice: {views[v.key].source} and {path}")
+            raise ProjectError(
+                f"view `{v.name}` is defined twice: {views[v.key].source} and {path}"
+            )
         views[v.key] = v
     return views
 
@@ -149,7 +158,9 @@ class MigrationFile:
             if names is not None:
                 ops += [Op("drop", n.lower(), None, n) for n in names]
                 continue
-            raise ProjectError(f"{self.name}: unexpected statement in atlas-views block: {st.code[:60]}...")
+            raise ProjectError(
+                f"{self.name}: unexpected statement in atlas-views block: {st.code[:60]}..."
+            )
         return ops
 
     def table_changes(self) -> list[tuple[str, str]]:
@@ -163,7 +174,10 @@ class MigrationFile:
 def load_migrations(migrations_dir: Path) -> list[MigrationFile]:
     if not migrations_dir.is_dir():
         raise ProjectError(f"migrations folder not found: {migrations_dir}")
-    return [MigrationFile(p, p.read_text(encoding="utf-8")) for p in sorted(migrations_dir.glob("*.sql"))]
+    return [
+        MigrationFile(p, p.read_text(encoding="utf-8"))
+        for p in sorted(migrations_dir.glob("*.sql"))
+    ]
 
 
 def files_upto(files: list[MigrationFile], version: str | None) -> list[MigrationFile]:
@@ -181,8 +195,12 @@ def files_upto(files: list[MigrationFile], version: str | None) -> list[Migratio
 
 @dataclass
 class ViewState:
-    views: dict[str, ViewDef] = field(default_factory=dict)  # ordered by last definition
-    history: dict[str, list[tuple[str, str]]] = field(default_factory=dict)  # key -> [(file, action)]
+    views: dict[str, ViewDef] = field(
+        default_factory=dict
+    )  # ordered by last definition
+    history: dict[str, list[tuple[str, str]]] = field(
+        default_factory=dict
+    )  # key -> [(file, action)]
 
 
 def compute_state(files: list[MigrationFile]) -> ViewState:
@@ -191,7 +209,9 @@ def compute_state(files: list[MigrationFile]) -> ViewState:
         for op in f.ops:
             hist = state.history.setdefault(op.key, [])
             if op.action == "create":
-                hist.append((f.name, "create" if op.key not in state.views else "replace"))
+                hist.append(
+                    (f.name, "create" if op.key not in state.views else "replace")
+                )
                 state.views.pop(op.key, None)
                 state.views[op.key] = op.view
             else:
@@ -205,7 +225,9 @@ def managed_views(files: list[MigrationFile]) -> set[str]:
     return {op.key for f in files for op in f.ops}
 
 
-def topo_order(views: dict[str, ViewDef], subset: list[str] | None = None) -> tuple[list[str], bool]:
+def topo_order(
+    views: dict[str, ViewDef], subset: list[str] | None = None
+) -> tuple[list[str], bool]:
     """Order `subset` (default: all) so views come after the views they reference.
     Returns (order, had_cycle).
     """

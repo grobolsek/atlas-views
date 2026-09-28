@@ -45,9 +45,15 @@ class SyncPlan:
         if not self.has_view_changes:
             lines.append("-- no view changes")
         for name, reason in self.drops:
-            lines += [f"-- drop: {name} ({reason})", f"DROP VIEW IF EXISTS {quote_ident(name)};"]
+            lines += [
+                f"-- drop: {name} ({reason})",
+                f"DROP VIEW IF EXISTS {quote_ident(name)};",
+            ]
         for view, reason in self.creates:
-            lines += [f"-- view: {view.name} ({reason})", view.sql.rstrip().rstrip(";").rstrip() + ";"]
+            lines += [
+                f"-- view: {view.name} ({reason})",
+                view.sql.rstrip().rstrip(";").rstrip() + ";",
+            ]
         lines.append(END)
         return "\n".join(lines) + "\n"
 
@@ -63,7 +69,9 @@ def plan_sync(
     marked = [i for i, f in enumerate(files) if f.has_block]
     if amend:
         if not marked:
-            raise ProjectError("nothing to amend: no migration contains an atlas-views block yet")
+            raise ProjectError(
+                "nothing to amend: no migration contains an atlas-views block yet"
+            )
         last = marked[-1]
         if last != len(files) - 1:
             raise ProjectError(
@@ -82,7 +90,9 @@ def plan_sync(
         target = fresh[-1] if fresh and not force_new else None
 
     if target is not None and target.uses_custom_delimiter:
-        raise ProjectError(f"{target.name} uses a custom `-- atlas:delimiter`; run with --new")
+        raise ProjectError(
+            f"{target.name} uses a custom `-- atlas:delimiter`; run with --new"
+        )
 
     plan = SyncPlan(target=target, fresh=fresh)
 
@@ -121,7 +131,11 @@ def plan_sync(
             hits = sorted(v.idents & moving)
             if hits:
                 dep = hits[0]
-                why = "dropped" if dep in dropped else ("changed" if dep in changed else "affected")
+                why = (
+                    "dropped"
+                    if dep in dropped
+                    else ("changed" if dep in changed else "affected")
+                )
                 affected[k] = f"depends on view `{dep}`, which is {why}"
                 moving.add(k)
                 grew = True
@@ -133,7 +147,7 @@ def plan_sync(
         refs_dropped = desired[k].idents & dropped_set
         if refs_dropped:
             plan.warnings.append(
-                f"view `{desired[k].name}` references dropped view `{sorted(refs_dropped)[0]}`; the migration will fail until you fix it",
+                f"view `{desired[k].name}` references dropped view `{min(refs_dropped)}`; the migration will fail until you fix it",
             )
     if refresh:
         emit = {**changed, **{k: f"refresh: {r}" for k, r in affected.items()}}
@@ -170,9 +184,13 @@ def write_plan(plan: SyncPlan, migrations_dir: Path, atlas: Atlas, name: str) ->
             atlas.migrate("new", name)
             new = [p for p in migrations_dir.glob("*.sql") if p.name not in before]
             if len(new) != 1:
-                raise ProjectError(f"expected `atlas migrate new` to create one file, found {len(new)}")
+                raise ProjectError(
+                    f"expected `atlas migrate new` to create one file, found {len(new)}"
+                )
             created = target_path = new[0]
-            current = MigrationFile(target_path, target_path.read_text(encoding="utf-8"))
+            current = MigrationFile(
+                target_path, target_path.read_text(encoding="utf-8")
+            )
         else:
             target_path = plan.target.path
             original = target_path.read_text(encoding="utf-8")
@@ -188,7 +206,9 @@ def write_plan(plan: SyncPlan, migrations_dir: Path, atlas: Atlas, name: str) ->
         check = load_migrations(migrations_dir)
         parsed = next(f for f in check if f.path == target_path)
         if len(parsed.ops) != len(plan.creates) + len(plan.drops):
-            raise ProjectError(f"{target_path.name}: written block does not parse back correctly")
+            raise ProjectError(
+                f"{target_path.name}: written block does not parse back correctly"
+            )
         return target_path
     except BaseException:
         if created is not None and created.exists():
