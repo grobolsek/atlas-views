@@ -1,0 +1,6 @@
+pymysql>=1.1
+cryptography
+docker>=7
+
+[test]
+pytest

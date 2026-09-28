@@ -1,0 +1,2 @@
+[console_scripts]
+atlas-views = atlas_views.cli:main
